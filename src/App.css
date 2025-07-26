@@ -1,0 +1,46 @@
+
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+
+.pr-current-list{
+  height: 600px;
+  width: 100%;
+  border: 1px solid black;
+  overflow: scroll;
+}
+
+.pr-search-list{
+  height: 300px;
+  width: 100%;
+  border: 1px solid black;
+  overflow: scroll;
+}
+
+.pr-selected-list{
+  padding: 10px 0 ;
+}
+
+.pr-current-list table{
+  width:100%;
+}
+
+.pr-selected-list:hover{
+  background: #e3e3e3;
+  cursor: pointer;
+}
+
+.pointer:hover {
+  cursor: pointer;
+}
+
+
+.background-1{
+  border: 1px solid black;
+  background-color: #aad4c8;
+  padding: 30px;
+}
