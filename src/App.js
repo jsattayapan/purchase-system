@@ -5,13 +5,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 
 import PrView from './page/pr-view';
+import PoView from './page/po-view';
 
 
 function App() {
   return (
     <div className="App">
       <div className="container">
-        <PrView />
+        <PoView />
       </div>
 
 

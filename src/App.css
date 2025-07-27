@@ -40,6 +40,11 @@
   cursor: pointer;
 }
 
+.pr-list-container:hover {
+  background: #e3e3e3;
+  cursor: pointer;
+}
+
 
 .background-1{
   border: 1px solid black;
