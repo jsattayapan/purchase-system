@@ -15,21 +15,23 @@
 }
 
 .pr-search-list{
-  height: 300px;
+  height: 400px;
   width: 100%;
   border: 1px solid black;
   overflow: scroll;
 }
 
 .pr-selected-list{
-  padding: 10px 0 ;
+  padding: 10px ;
 }
 
 .pr-current-list table{
   width:100%;
 }
 
-.pr-selected-list:hover{
+
+
+.hover-line:hover {
   background: #e3e3e3;
   cursor: pointer;
 }

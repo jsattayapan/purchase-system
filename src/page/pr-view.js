@@ -1,30 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import validator from 'validator';
+
+import ft from './../tunnel'
 
 const MyComponent = () => {
   const [prList, setPrList] = useState([]);
   const [itemsList, setItemsList] = useState([]);
-  const [quantity, setQuantity] = useState(0);
   const [prFilter, setPrFilter] = useState('');
   const [value, setValue] = useState('')
   const [prUnit, setPrUnit] = useState('');
-  const [prSelectedItem, setPrSelectedItem] = useState({ name: '', unit: '' });
+  const [requester, setRequester] = useState('')
+
+  useEffect(() => {
+    ft.getItems((data) => {
+        if(data.status){
+          setItemsList(data.itemsList)
+        }else{
+          alert(data.msg);
+        }
+      })
+
+}, []);
 
   const unitOnChange = (e) => {
     const unit = e.target.value;
     setPrUnit(unit);
   };
 
+  const requesterOnChange = (e) => {
+    const name = e.target.value;
+    setRequester(name);
+  };
+
   const remove = (index) => {
     setPrList(prList.filter((x, xIndex) => xIndex !== index));
   };
 
-  const quantityOnChange = (e) => {
-    let number = e.target.value;
-    if (validator.isFloat(number) || number === '') {
-      setQuantity(number);
-    }
-  };
 
   const addNewItem = () => {
     if (prFilter.trim() === '' || prUnit.trim() === '') {
@@ -34,10 +45,11 @@ const MyComponent = () => {
       if (exsited.length !== 0) {
         alert('มีรายการนี้อยู่แล้ว');
       } else {
+        const newItem = { id: null, name: prFilter.trim(), unit: prUnit.trim(), current_price: 0 }
         setItemsList([
-          ...itemsList,
-          { id: null, name: prFilter.trim(), unit: prUnit.trim(), current_price: 0 },
+          ...itemsList, newItem,
         ]);
+        addItemTolist(newItem)
         setPrFilter('');
         setPrUnit('');
       }
@@ -49,29 +61,28 @@ const MyComponent = () => {
     setPrFilter(text);
   };
 
-  const addItemTolist = () => {
-    if (quantity < 0.1 || quantity === '') {
-      alert('กรุณาใส่จำนวนไม่ต่ำกว่า 0');
-    } else {
-      if (prSelectedItem.name === '') {
-        alert('กรุณาเลือกสินค้า');
-        return;
-      }
-      setPrList([
-        ...prList,
-        {
-          id: prSelectedItem.id || null,
-          name: prSelectedItem.name,
-          unit: prSelectedItem.unit,
-          quantity: quantity,
-          current_price: prSelectedItem.current_price,
-          total: quantity *  prSelectedItem.current_price
-        },
-      ]);
-      setPrSelectedItem({ name: '', unit: '' });
-      setQuantity(0);
-    }
+  const addItemTolist = (prSelectedItem) => {
+    setPrList([
+      ...prList,
+      {
+        id: prSelectedItem.id || null,
+        name: prSelectedItem.name,
+        unit: prSelectedItem.unit,
+        quantity: 0,
+        current_price: prSelectedItem.current_price,
+        total: 0,
+        isEdit: true
+      },
+    ]);
   };
+
+  const submitPr = () => ft.submitPr({user: {username: 'olotem321'}, prList, requester}, res => {
+    if(res.status){
+        alert('บันทึกสำเร็จ')
+      }else{
+        alert(res.msg)
+      }
+  })
 
   const updatePrice = (e, index) => {
     const newPrice = e.target.value;
@@ -97,9 +108,14 @@ const MyComponent = () => {
     setPrList(updatedList);
   };
 
-  const setItem = (name, unit) => {
-    setPrSelectedItem({ name, unit });
+  const setEdit = (status, index) => {
+    const updatedList = [...prList];
+    updatedList[index].isEdit = status;
+    setPrList(updatedList);
   };
+
+  const subTotal = prList.reduce((total, item) => total += item.total,0)
+
 
   return (
     <div className="">
@@ -108,52 +124,86 @@ const MyComponent = () => {
         <div className="col-8">
           <div className="pr-current-list container-box">
             <table className="table">
-              <thead>
-              </thead>
+              <thead >
+
+
+               <tr>
+
+
+                 <th>ลำดับที่</th>
+
+
+                 <th>รายการสินค้า</th>
+
+
+               <th className="text-end">ราคา</th>
+
+
+                 <th className="text-end">จำนวน</th>
+
+
+               <th className="text-end">ราคารวม</th>
+             <th></th>
+
+               </tr>
+
+             </thead>
               <tbody>
                 {prList.map((item, index) => (
-                  <ItemLine item={item} index={index} updatePrice={updatePrice} updateTotal={updateTotal} updateQuantity={updateQuantity} remove={remove}/>
+                  <ItemLine item={item} index={index}
+                    updatePrice={updatePrice}
+                    updateTotal={updateTotal}
+                    updateQuantity={updateQuantity}
+                    setEdit={setEdit}
+                    remove={remove}/>
                 ))}
               </tbody>
             </table>
           </div>
-          <br />
-          <div className="row">
-            <div className="col-2">
-              {prList.length !== 0 && (
-                <button onClick={() => alert('Save functionality coming soon')} className="btn btn-success">
-                  บันทึก
-                </button>
-              )}
+
+          <div className="row px-2">
+            <div className="col-6 bg-light">
+              <br/>
+              <div className="mb-3">
+            <label htmlFor="exampleInput" className="form-label"><b>ผู้สั่ง</b></label>
+            <input
+              type="text"
+              className="form-control"
+              id="exampleInput"
+              placeholder="ลงชื่อผู้สั่ง"
+              value={requester}
+              onChange={requesterOnChange}
+            />
+          </div>
+            </div>
+            <div className="col-6 bg-light text-end p-2">
+            <br />
+          <h4>รวม: {new Intl.NumberFormat('en-US').format(subTotal)} บาท</h4>
+          <div className="col-12 text-end">
+              <button onClick={submitPr} className="btn btn-success"
+                disabled={!(prList.length !== 0 && !prList.some(item => item.isEdit) && requester.trim() !== '')}>
+                บันทึก
+              </button>
+          </div>
             </div>
           </div>
+          <br />
+
         </div>
         <div className="col-4 background-1">
-          <div className="row">
-            <div className="col-12">
-              <h6>รายการ:</h6>{' '}
-              <h3>{prSelectedItem.name ? `${prSelectedItem.name} (${prSelectedItem.unit})` : 'เลือกสินค้า'}</h3>
-            </div>
-            <div className="col-12">
-              <h6>จำนวน:</h6>{' '}
-              <input value={quantity} onChange={quantityOnChange} type="text" />
-            </div>
-            <div className="col-12">
-              <br />
-              <button className="btn btn-success" onClick={addItemTolist}>
-                เพิ่มไปในใบสั่งซื้อ
-              </button>
-            </div>
-          </div>
+          <h4>รายการ</h4>
           <div className="row">
             <div className="p-2">
             <div className="pr-search-list ">
               {itemsList
                 .filter((x) => x.name.includes(prFilter))
                 .map((item) => (
-                  <div className="col-12" key={item.id}>
-                    <div className="pr-selected-list" onClick={() => setItem(item.name, item.unit)}>
-                      {item.name}/{item.unit}{' '}
+                  <div style={{display:'flex'}} className="col-12 hover-line" key={item.id}>
+                    <div style={{flexGrow:4}} className="pr-selected-list">
+                      {item.name} [{item.unit}]
+                    </div>
+                    <div className="p-2">
+                      <button className='btn btn-light btn-sm' onClick={() => addItemTolist(item)}>+ เพิ่ม</button>
                     </div>
                   </div>
                 ))}
@@ -194,55 +244,78 @@ const MyComponent = () => {
 };
 
 const ItemLine = props => {
-  const [isEdit, setEdit] = useState(true)
+
+  const saveBtnClick = (index) => {
+    if(isValidFloat(props.item.current_price) &&
+    isValidFloat(props.item.quantity) &&
+    isValidFloat(props.item.total)){
+      if(Number(props.item.quantity) > 0){
+        props.setEdit(false, index)
+      }else {
+        alert('จำนวนต้องมากกว่า 0')
+      }
+
+    }else{
+      alert('กรุณาบันทึกข้อมูลให้ครบถ้วน')
+    }
+  }
 
   return (
     <tr key={props.index}>
-      <td style={{ width: '5%' }}>{props.index + 1}</td>
-    <td className="" style={{ width: '35%' }}>{props.item.name} [{props.item.unit}]</td>
-<td style={{ width: '20%' }}>
-        <input
-          type="text"
-          className="form-control text-end"
-          id="exampleInput"
-          placeholder="ราคา"
-          value={props.item.current_price}
-          onChange={(e) => props.updatePrice(e, props.index)}
-        />
+      <td style={{ width: '10%' }}>{props.index + 1}</td>
+    <td className="" style={{ width: '40%' }}>{props.item.name} [{props.item.unit}]</td>
+  <td style={{ width: '15%' }} className="text-end">
+    {props.item.isEdit ? <input
+      type="text"
+      className="form-control text-end"
+      id="exampleInput"
+      placeholder="ราคา"
+      value={props.item.current_price}
+      onChange={(e) => props.updatePrice(e, props.index)}
+    /> : new Intl.NumberFormat('en-US').format(props.item.current_price)}
     </td>
-    <td style={{ width: '20%' }}>
-      <input
+    <td style={{ width: '15%' }} className="text-end">
+      {props.item.isEdit ? <input
         type="text"
         className="form-control text-end"
         id="exampleInput"
         placeholder="จำนวน"
         value={props.item.quantity}
         onChange={(e) => props.updateQuantity(e, props.index)}
-      />
+      /> : props.item.quantity}
+
   </td>
-      <td style={{ width: '20%' }}>
-        <input
+      <td style={{ width: '15%' }} className="text-end">
+        {props.item.isEdit ? <input
           type="text"
           className="form-control text-end"
           id="exampleInput"
           placeholder="ราคารวม"
           value={props.item.total}
           onChange={(e) => props.updateTotal(e, props.index)}
-        />
-      <div className='text-end'>
-        <br />
-      <button onClick={() => props.remove(props.index)} className="btn btn-success" >
-          Save
+        /> : new Intl.NumberFormat('en-US').format(props.item.total)}
+
+      </td>
+      <td>
+      {!props.item.isEdit ? <button
+        onClick={() => props.setEdit(true, props.index)}
+         className="btn btn-warning btn-sm"><i className="bi bi-pencil-fill"></i></button>: <div className='text-end mt-2'>
+      <button onClick={() => saveBtnClick(props.index)} className="btn btn-success btn-sm" >
+          <i className="bi bi-check-lg"></i>
         </button>
-         {' '}
-        <button onClick={() => props.remove(props.index)} className="btn btn-danger">
-          ลบ
+        <button onClick={() => props.remove(props.index)} className="btn btn-danger btn-sm mt-1">
+          <i className="bi bi-x-lg"></i>
         </button>
-        </div>
+      </div>}
       </td>
 
     </tr>
   )
 }
+
+const isValidFloat = (value) => {
+  const num = Number(value);
+  return value.toString().trim() !== '' && !isNaN(num);
+};
 
 export default MyComponent;
