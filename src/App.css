@@ -45,6 +45,11 @@
   cursor: pointer;
 }
 
+.pr-selected {
+  background: #5DE2E7;
+  cursor: pointer;
+}
+
 
 .background-1{
   border: 1px solid black;

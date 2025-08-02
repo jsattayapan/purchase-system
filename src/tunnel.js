@@ -4,9 +4,42 @@ import {ipAddress, tunitServer} from './constants';
 const getItems = (callback) => {
   makeGetRequest('items', res => callback(res))
 }
+const getPr = (callback) => {
+  makeGetRequest('pr', res => callback(res))
+}
 const submitPr = (data, callback) => {
   makePostRequest('pr/new', data, res => callback(res))
 }
+
+const getPrById = (id, callback) => {
+  makePostRequest('pr', {id}, res => callback(res))
+}
+
+const editPrItemList = (data, callback) => {
+  makePostRequest('pr/editItemList', data, res => callback(res))
+}
+
+const cancelPr = (id, callback) => {
+  makePostRequest('pr-delete', {id}, res => callback(res))
+}
+
+const addExpenseToPurchase = (data, callback) => {
+  makePostRequest('addExpenseToPurchase', data, res => callback(res))
+}
+
+
+const deleteExpense = (data, callback) => {
+  makePostRequest('deleteExpense', data, res => callback(res))
+}
+
+const addDiscount = (data, callback) => {
+  makePostRequest('pr/discount/add', data, res => callback(res))
+}
+
+const removeDiscount = (data, callback) => {
+  makePostRequest('pr/discount/remove', data, res => callback(res))
+}
+
 
 function makePostRequest(route, data, callback){
   axios.post(`${ipAddress}/${route}`, data).then(res => {
@@ -27,4 +60,4 @@ function makeGetRequest(route, callback){
 }
 
 
-export default {getItems, submitPr}
+export default {getItems, submitPr, getPr, getPrById, editPrItemList, cancelPr, addExpenseToPurchase, deleteExpense, addDiscount, removeDiscount}

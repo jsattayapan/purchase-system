@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import validator from 'validator';
+import Swal from 'sweetalert2';
 
 import ft from './../tunnel'
 
-const MyComponent = () => {
-  const [prList, setPrList] = useState([]);
+const MyComponent = props => {
+  const [prList, setPrList] = useState(props.prItemList);
   const [itemsList, setItemsList] = useState([]);
   const [prFilter, setPrFilter] = useState('');
   const [value, setValue] = useState('')
   const [prUnit, setPrUnit] = useState('');
-  const [requester, setRequester] = useState('')
+  const [requester, setRequester] = useState(props.pr ? props.pr.requester || '' : '')
 
   useEffect(() => {
     ft.getItems((data) => {
@@ -21,6 +22,25 @@ const MyComponent = () => {
       })
 
 }, []);
+
+const handleBackButton = () => {
+  const msg = props.pr ? 'ข้อมูลจะไม่ถูกแก้ไข หากคุณออกโดยไม่บันทึก' : "ข้อมูลที่คุณกรอกจะหายทั้งหมด หากคุณออกโดยไม่บันทึก"
+  Swal.fire({
+    title: 'คุณแน่ใจหรือไม่ว่าจะออกจากหน้านี้?',
+    text: msg,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'ออกจากหน้านี้',
+    cancelButtonText: 'อยู่ในหน้านี้ต่อ',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // perform delete action here
+      backToPo()
+    }
+  });
+};
 
   const unitOnChange = (e) => {
     const unit = e.target.value;
@@ -35,6 +55,10 @@ const MyComponent = () => {
   const remove = (index) => {
     setPrList(prList.filter((x, xIndex) => xIndex !== index));
   };
+
+  const backToPo = () => {
+    props.setPage('po')
+  }
 
 
   const addNewItem = () => {
@@ -79,6 +103,20 @@ const MyComponent = () => {
   const submitPr = () => ft.submitPr({user: {username: 'olotem321'}, prList, requester}, res => {
     if(res.status){
         alert('บันทึกสำเร็จ')
+        backToPo()
+      }else{
+        alert(res.msg)
+      }
+  })
+
+
+  const editPrItemList = () => ft.editPrItemList({user: {username: 'olotem321'}, prList, requester, purchaseId: props.pr.id}, res => {
+    if(res.status){
+      props.setPrItemList(prList)
+      let newPr = props.pr
+      newPr['requester'] = requester
+      props.setPr(newPr)
+        backToPo()
       }else{
         alert(res.msg)
       }
@@ -119,6 +157,12 @@ const MyComponent = () => {
 
   return (
     <div className="">
+      <div className="mt-4" style={{display:'flex'}}>
+        <button className="btn btn-outline-secondary " onClick={handleBackButton}>
+        <i className="bi bi-arrow-left"></i> Back
+      </button>
+      { props.pr && <h4 className="mx-2 mt-2">ID: {props.pr.id}</h4> }
+      </div>
       <br />
       <div className="row">
         <div className="col-8">
@@ -180,7 +224,7 @@ const MyComponent = () => {
             <br />
           <h4>รวม: {new Intl.NumberFormat('en-US').format(subTotal)} บาท</h4>
           <div className="col-12 text-end">
-              <button onClick={submitPr} className="btn btn-success"
+              <button onClick={props.pr ? editPrItemList : submitPr} className="btn btn-success"
                 disabled={!(prList.length !== 0 && !prList.some(item => item.isEdit) && requester.trim() !== '')}>
                 บันทึก
               </button>
