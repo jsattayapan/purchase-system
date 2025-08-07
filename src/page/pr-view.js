@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import validator from 'validator';
 import Swal from 'sweetalert2';
 
@@ -11,6 +11,8 @@ const MyComponent = props => {
   const [value, setValue] = useState('')
   const [prUnit, setPrUnit] = useState('');
   const [requester, setRequester] = useState(props.pr ? props.pr.requester || '' : '')
+
+  let inputRef = useRef({});
 
   useEffect(() => {
     ft.getItems((data) => {
@@ -53,6 +55,7 @@ const handleBackButton = () => {
   };
 
   const remove = (index) => {
+    delete inputRef.current[prList[index].name+prList[index].unit];
     setPrList(prList.filter((x, xIndex) => xIndex !== index));
   };
 
@@ -85,7 +88,9 @@ const handleBackButton = () => {
     setPrFilter(text);
   };
 
-  const addItemTolist = (prSelectedItem) => {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const addItemTolist = async (prSelectedItem) => {
     setPrList([
       ...prList,
       {
@@ -98,6 +103,12 @@ const handleBackButton = () => {
         isEdit: true
       },
     ]);
+    await sleep(500);
+    const input = inputRef.current[prSelectedItem.name+prSelectedItem.unit];
+    if (input) {
+      input.focus();
+      input.select();
+    }
   };
 
   const submitPr = () => ft.submitPr({user: {username: 'olotem321'}, prList, requester}, res => {
@@ -141,15 +152,18 @@ const handleBackButton = () => {
   const updateTotal = (e, index) => {
     const newPrice = e.target.value;
     const updatedList = [...prList];
-    updatedList[index].total = newPrice;
+    updatedList[index].total = 1 * newPrice;
     updatedList[index].quantity = (newPrice / updatedList[index].current_price).toFixed(3);
     setPrList(updatedList);
   };
 
   const setEdit = (status, index) => {
+
     const updatedList = [...prList];
     updatedList[index].isEdit = status;
     setPrList(updatedList);
+
+
   };
 
   const subTotal = prList.reduce((total, item) => total += item.total,0)
@@ -199,7 +213,9 @@ const handleBackButton = () => {
                     updateTotal={updateTotal}
                     updateQuantity={updateQuantity}
                     setEdit={setEdit}
+                    inputRef={inputRef}
                     remove={remove}/>
+
                 ))}
               </tbody>
             </table>
@@ -326,6 +342,11 @@ const ItemLine = props => {
         placeholder="จำนวน"
         value={props.item.quantity}
         onChange={(e) => props.updateQuantity(e, props.index)}
+        ref={(el) => {
+          console.log(props.inputRef.current);
+          console.log(el);
+              if (el) props.inputRef.current[props.item.name+props.item.unit] = el;
+            }}
       /> : props.item.quantity}
 
   </td>

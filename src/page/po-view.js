@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ft from './../tunnel'
+import helper from './helper'
 import moment from 'moment'
 import Swal from 'sweetalert2';
 
@@ -22,22 +23,54 @@ const MyComponent = (props) => {
       })
   }
 
+
+
+
   const handleItemToggle = (index, status) => {
     const updatedList = [...props.prItemList];
-    updatedList[index].hasVat = status;
+    updatedList[index].vat = status ? 'vat' : 'novat';
+
     props.setPrItemList(updatedList);
+    ft.updatePurchaseItemVat({item: updatedList[index], status}, res => {
+      if(!res.status){
+        updatedList[index].vat = !status ? 'vat' : 'novat';;
+        props.setPrItemList(updatedList);
+        alert(res.msg)
+      }
+    })
+
+    let incVat = !updatedList.some(item => item.vat === 'vat')
+      if(incVat && (props.pr.includeVat !== 0) ){
+        //Update Purchae Vat to : No Vat: 0
+        ft.updatePurchaseIncludeVat({purchaseId: props.pr.id, includeVat: 0}, res => {})
+        setChecked(false)
+      }
+
+      if(!incVat && (props.pr.includeVat === 0) ){
+        //Update Purchae Vat to : Excl Vat: 2
+        ft.updatePurchaseIncludeVat({purchaseId: props.pr.id, includeVat: 2}, res => {})
+      }
+
   };
 
   const handleAllVatToggle = () => {
-    const status = props.prItemList[0].hasVat || false
-    const updatedList = props.prItemList.map(item => ({ ...item, hasVat: !status }));
-    props.setPrItemList(updatedList);
+    const status = props.prItemList[0].vat === 'vat' || false
+    ft.updatePurchaseIncludeVat({purchaseId: props.pr.id, includeVat: status ? 2 : 0}, res => {})
+    ft.updateAllPurchaseItemVat({purchaseId: props.pr.id, status: !status}, res => {
+      if(res.status){
+        getPrData(props.pr.id)
+      }else{
+        alert(res.msg)
+      }
+    })
   }
 
   const getPrData = id => {
     ft.getPrById(id, res => {
       if(res.status){
         props.setPr(res.pr)
+        console.log(res.pr);
+        setChecked(res.pr.includeVat===1)
         props.setPrItemList(res.prItems)
         props.setPrExpenseList(res.prExpense)
       }
@@ -71,16 +104,19 @@ const MyComponent = (props) => {
     });
   }
 
-  let incVat = !props.prItemList.some(item => item.hasVat)
+  let incVat = !props.prItemList.some(item => item.vat === 'vat')
 
-  useEffect(() => {
-    if (incVat && checked) {
-      setChecked(false);
-    }
-  }, [incVat, checked]);
 
-  const subTotal = props.prItemList.reduce((total, { total: t, hasVat }) => {
-    if (hasVat) {
+
+  // useEffect(() => {
+  //   if (incVat && checked) {
+  //     setChecked(false);
+  //     //Update No Vat
+  //   }
+  // }, [ checked]);
+
+  const subTotal = props.prItemList.reduce((total, { total: t, vat }) => {
+    if (vat === 'vat') {
       return checked
         ? {
             sub: total.sub + t * 100 / 107,
@@ -243,6 +279,28 @@ const deleteExpense = (id) => {
   });
 }
 
+const createPRApproval = () => {
+  helper.previewPo(
+    props.pr,
+    props.prItemList,
+    props.prExpenseList,
+    'Avatara Resort',
+    discount,
+    totalExpense,
+    subTotal.vat,
+    subTotal.sub,
+    (subTotal.vat + subTotal.sub + totalExpense - discount),
+    props.pr.requester
+  )
+  ft.updatePurchaseStatus({purchaseId: props.pr.id, status: 'await'}, res=> {
+    if(res.status){
+      getPrData(props.pr.id)
+    }else{
+      alert(res.msg)
+    }
+  })
+}
+
   return (
     <div className="">
       <div className='row'>
@@ -267,7 +325,7 @@ const deleteExpense = (id) => {
                 <b>ID: {props.pr.id}</b>
               </div>
               <button className="btn btn-success btn-sm mx-3">จ่าย PO</button>
-              <button className="btn btn-warning btn-sm mx-3">ใบเสนอราคา</button>
+            <button onClick={createPRApproval} className="btn btn-warning btn-sm mx-3">ใบเสนอราคา</button>
               <button onClick={cancelPr} className="btn btn-danger btn-sm">ยกเลิก</button>
             </div>
             <div className="mt-2" style={{display:'flex'}}>
@@ -281,8 +339,14 @@ const deleteExpense = (id) => {
               </div>
               <div className='text-end' style={{display:'flex', flexDirection: 'column', flexGrow: 2 , justifyContent: 'flex-end'}}>
               <p>
-                <span class="badge text-bg-warning">{props.pr.status}</span>
+                <span class={`badge ${props.pr.status === 'request' ? 'text-bg-warning' : 'text-bg-info'} `}>{props.pr.status}</span>
               </p>
+            </div>
+            </div>
+            <div className="mt-2 border rounded p-3" style={{display:'flex', flexDirection: 'column'}}>
+              <h6><u>ผู้ขาย & การชำระ</u></h6>
+            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80px', width: '100%'}}>
+              <button className="btn btn-link">+ เพิ่มผู้ขาย</button>
             </div>
             </div>
             <div className="mt-2" style={{display: 'flex', justifyContent: 'flex-end'}}>
@@ -293,7 +357,12 @@ const deleteExpense = (id) => {
                 id="flexCheckDefault"
                 checked={checked}
                 disabled={incVat}
-                onChange={() => setChecked(!checked)}
+                onChange={() => {
+                  //Update Purchase Vat to : 1 or 2
+                  ft.updatePurchaseIncludeVat({purchaseId: props.pr.id, includeVat: checked ? 2 : 1}, res => {})
+                  setChecked(!checked)
+                }
+              }
               />
               <label className="form-check-label" htmlFor="flexCheckDefault">
                 ราคาสินค้ารวม Vat
@@ -303,6 +372,14 @@ const deleteExpense = (id) => {
             </div>
             <div style={{maxHeight: '60vh', overflowY: 'auto'}}>
               <table className="table table-striped">
+                <colgroup>
+                  <col style={{ width: '5%' }} />         {/* คอลัมน์ 1 */}
+                  <col style={{ width: '5%' }} />          {/* คอลัมน์ 2 - ขยาย */}
+                  <col style={{ width: '43%' }} />
+                <col style={{ width: '15%' }} />
+              <col style={{ width: '22%' }} />       {/* คอลัมน์ 3 */}
+                <col style={{ width: '10%' }} />
+                </colgroup>
           <thead className="table-light">
             <tr>
               <th>#</th>
@@ -425,7 +502,7 @@ const PrListBox = props => {
       </div>
       <div style={{display:'flex', justifyContent: 'space-between', color: lightTextColor}}>
         <span>ID: {pr.id}</span>
-      <span class="badge text-bg-warning">{pr.status}</span>
+      <span class={`badge ${pr.status === 'request' ? 'text-bg-warning' : 'text-bg-info'} `}>{pr.status}</span>
       </div>
     </div>
   )
@@ -433,10 +510,9 @@ const PrListBox = props => {
 
 const PrListItem = props => {
   const {item, handleItemToggle, index} = props
-  const [isOn, setIsOn] = useState(false);
 
    const handleToggle = () => {
-     const status = item.hasVat || false
+     const status = item.vat === 'vat' || false
      handleItemToggle(!status);
    };
   return (
@@ -448,10 +524,10 @@ const PrListItem = props => {
       <td>{item.current_price}</td>
       <td className="text-end">
       <button
-    className={`btn ${item.hasVat ? 'btn-primary' : 'btn-outline-secondary'}`}
+    className={`btn ${item.vat === 'vat' ? 'btn-primary' : 'btn-outline-secondary'}`}
     onClick={handleToggle}
     >
-    {item.hasVat ? 'มี Vat' : 'ไม่มี Vat'}
+    {item.vat === 'vat' ? 'มี Vat' : 'ไม่มี Vat'}
     </button>
   </td>
   <td className="text-end">{item.total}</td>

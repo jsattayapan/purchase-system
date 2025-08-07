@@ -28,6 +28,11 @@ const addExpenseToPurchase = (data, callback) => {
 }
 
 
+const updatePurchaseItemVat = (data, callback) => {
+  makePostRequest('pr/item/vat/update', data, res => callback(res))
+}
+
+
 const deleteExpense = (data, callback) => {
   makePostRequest('deleteExpense', data, res => callback(res))
 }
@@ -40,6 +45,19 @@ const removeDiscount = (data, callback) => {
   makePostRequest('pr/discount/remove', data, res => callback(res))
 }
 
+
+const updateAllPurchaseItemVat = (data, callback) => {
+  makePostRequest('pr/item/all/vat/update', data, res => callback(res))
+}
+
+
+const updatePurchaseIncludeVat = (data, callback) => {
+  makePostRequest('pr/includeVat/update', data, res => callback(res))
+}
+
+const updatePurchaseStatus = (data, callback) => {
+  makePostRequest('pr/status/update', data, res => callback(res))
+}
 
 function makePostRequest(route, data, callback){
   axios.post(`${ipAddress}/${route}`, data).then(res => {
@@ -60,4 +78,9 @@ function makeGetRequest(route, callback){
 }
 
 
-export default {getItems, submitPr, getPr, getPrById, editPrItemList, cancelPr, addExpenseToPurchase, deleteExpense, addDiscount, removeDiscount}
+export default {
+  updatePurchaseStatus,
+  updatePurchaseIncludeVat,
+  updateAllPurchaseItemVat,
+  updatePurchaseItemVat,
+  getItems, submitPr, getPr, getPrById, editPrItemList, cancelPr, addExpenseToPurchase, deleteExpense, addDiscount, removeDiscount}
