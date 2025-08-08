@@ -1,17 +1,137 @@
 import React, { useState, useEffect } from 'react';
 import ft from './../tunnel'
 import helper from './helper'
+import numeral from "numeral";
 import moment from 'moment'
 import Swal from 'sweetalert2';
+import Select from 'react-select'
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const MyComponent = (props) => {
  const [checked, setChecked] = useState(false);
  const [prList, setPrList] = useState([])
+ const [sellerList, setSellerList] = useState([])
+ const [seller, setSeller] = useState([])
+ const [payment, setPayment] = useState(null)
+ const [property, setProperty] = useState(null)
+ const [issueDate, setIssueDate] = useState("")
  const username = 'olotem321'
 
  useEffect(() => {
    getPrList()
+   getSellerList()
+
 }, []);
+
+
+const addRemarkOnClick = () => {
+  Swal.fire({
+  title: 'หมายเหตุ',
+  input: 'textarea',
+  inputValue: props.pr.remark ? props.pr.remark : '', // pre-filled content
+  inputPlaceholder: 'รายละเอียด',
+  showCancelButton: true,
+  inputValidator: (value) => {
+  }
+}).then(result => {
+  if (result.isConfirmed) {
+    let value = result.value.trim() === '' ? null : result.value.trim()
+    ft.updatePurchaseRemark({purchaseId: props.pr.id, remark: value}, res => {
+      if(res.status){
+        getPrData(props.pr.id)
+      }else{
+        alert(res.msg)
+      }
+    })
+  }
+});
+
+}
+
+const addReferenceOnClick = () => {
+  Swal.fire({
+  title: '#Reference',
+  input: 'text',
+  inputValue: props.pr.reference ? props.pr.reference : '', // pre-filled content
+  inputPlaceholder: 'รายละเอียด',
+  showCancelButton: true,
+  inputValidator: (value) => {
+  }
+}).then(result => {
+  if (result.isConfirmed) {
+    let value = result.value.trim() === '' ? null : result.value.trim()
+    ft.updatePurchaseReference({purchaseId: props.pr.id, reference: value}, res => {
+      if(res.status){
+        getPrData(props.pr.id)
+      }else{
+        alert(res.msg)
+      }
+    })
+  }
+});
+
+}
+
+  const addNewSellerOnClick = () => {
+
+    Swal.fire({
+      title: 'ชื่อร้านค้า',
+      input: 'text',
+      inputPlaceholder: 'ชื่อร้าน ที่อยู่ เบอร์ติดต่อ',
+      inputValidator: (value) => {
+    if (!value) {
+      return 'กรุณาใส่ข้อมูล'; // message shown under input
+    }
+  },
+  preConfirm: (value) => {
+
+
+    if(sellerList.find(opt => opt.name === value)) {
+      Swal.showValidationMessage('ร้านค้าซ้ำ');
+      return false; // stop confirm
+    }
+
+    return { value };
+  },
+      showCancelButton: true,
+    }).then(result => {
+      if (result.isConfirmed) {
+        ft.submitNewSeller({name: result.value.value}, res => {
+          if(res.status){
+              getSellerList()
+          }
+        })
+      }
+    });
+  }
+
+  const setIssueDateClick = e => {
+    if(e.target.value !== ''){
+      let pr = props.pr
+      pr['issueDate'] = e.target.value
+      props.setPr(pr)
+      setIssueDate(e.target.value)
+      ft.updatePurchaseIssueDate({purchaseId: props.pr.id, issueDate: moment(e.target.value).format('DD/MM/YYYY')},res => {
+          if(!res.status){
+            alert(res.msg)
+          }
+      })
+    }
+
+  }
+
+  const propertyOnChange = e => {
+    let pr = props.pr
+    pr['property'] = e.value
+    props.setPr(pr)
+    setProperty({label: e.label, value: e.value})
+    ft.updatePurchaseProperty({purchaseId: props.pr.id, property: e.value}, res => {
+      if(!res.status){
+        alert(res.msg)
+      }
+    })
+  }
 
   const getPrList = () => {
     ft.getPr((data) => {
@@ -23,7 +143,71 @@ const MyComponent = (props) => {
       })
   }
 
+  const getSellerList = () => {
+    ft.getSellers(data => {
+      if(data.status){
+        setSellerList(data.sellerList)
+      }else{
+        alert(data.msg)
+      }
+    })
+  }
 
+
+  const setSupplier = (e) => {
+      const value = e.value;
+      const name = e.label
+      let pr = props.pr;
+      pr['supplier'] = name
+      pr['sellerId'] = value
+      setSeller({label: name, value})
+      props.setPr(pr)
+      ft.updatePurchaseSellerId({purchaseId: props.pr.id, sellerId: value}, res => {
+        if(!res.status){
+          alert(res.msg)
+        }
+      })
+    }
+
+    const setPaymentType = paymentType => {
+      let pr = props.pr
+      pr['paymentType'] = paymentType
+
+      if(paymentType === 'บัตรเครดิต' || paymentType === 'โอนเงิน'){
+        Swal.fire({
+          title: paymentType,
+          input: 'text',
+          inputPlaceholder: paymentType === 'บัตรเครดิต' ? 'หมายเลขบัตรเครติด': 'ธนาคารและเลขบัญชี',
+          showCancelButton: true,
+          inputValidator: (value) => {
+        if (!value) {
+          return 'กรุณาใส่ข้อมูล'; // message shown under input
+        }
+      },
+        }).then(result => {
+          if (result.isConfirmed) {
+            pr['paymentDetail'] = result.value
+            props.setPr(pr)
+            setPayment(paymentType)
+            ft.updatePurchasePaymentType({purchaseId: props.pr.id, paymentType, paymentDetail: result.value}, res => {
+              if(!res.status){
+                alert(res.msg)
+              }
+            })
+          }
+        });
+      }else{
+        pr['paymentDetail'] = null
+        props.setPr(pr)
+        setPayment(paymentType)
+        ft.updatePurchasePaymentType({purchaseId: props.pr.id, paymentType, paymentDetail: null}, res => {
+          if(!res.status){
+            alert(res.msg)
+          }
+        })
+      }
+
+    }
 
 
   const handleItemToggle = (index, status) => {
@@ -46,7 +230,7 @@ const MyComponent = (props) => {
         setChecked(false)
       }
 
-      if(!incVat && (props.pr.includeVat === 0) ){
+      if(!incVat && (props.pr.includeVat === 0 || props.pr.includeVat === null) ){
         //Update Purchae Vat to : Excl Vat: 2
         ft.updatePurchaseIncludeVat({purchaseId: props.pr.id, includeVat: 2}, res => {})
       }
@@ -69,10 +253,18 @@ const MyComponent = (props) => {
     ft.getPrById(id, res => {
       if(res.status){
         props.setPr(res.pr)
-        console.log(res.pr);
         setChecked(res.pr.includeVat===1)
         props.setPrItemList(res.prItems)
         props.setPrExpenseList(res.prExpense)
+        let seller = res.pr.sellerId  ? sellerListFormat.find(opt => opt.value === res.pr.sellerId) || null : null
+        setSeller(seller)
+        let payment = res.pr.paymentType ? res.pr.paymentType : null
+        setPayment(payment)
+        let property = res.pr.property ? res.pr.property : null
+        setProperty({label: property, value: property})
+        console.log(props.pr);
+        let issueDate = res.pr.issueDate ? formatDateForInput(res.pr.issueDate) : ""
+        setIssueDate(issueDate)
       }
     })
   }
@@ -171,7 +363,37 @@ const MyComponent = (props) => {
   }
 };
 
+const makePoOnClick = async () => {
+  if(props.pr.issueDate === null){
+    alert('กรุณาระบุวันที่รับบิล')
+    return
+  }
+  const { value: file } = await Swal.fire({
+      title: 'Upload PR พร้อมลายเซ็น',
+      input: 'file',
+      inputAttributes: {
+        accept: '.jpg, .png, .pdf, .docx', // limit file types
+        'aria-label': 'Upload your file here'
+      },
+      showCancelButton: true
+    });
 
+    if (file) {
+      // Example: Read file as Data URL
+      console.log(file);
+      ft.makePoWithApproveFile({purchaseId: props.pr.id, file, vat: subTotal.vat }, res => {
+        if(res.status){
+          alert('ข้อมูลถูกบันทึก')
+          props.setPr(null)
+          getPrList()
+        }else{
+          alert(res.msg)
+        }
+      })
+
+      Swal.fire('File selected!', `You picked: ${file.name}`, 'success');
+    }
+}
 
 const removeDiscount = async () => {
   Swal.fire({
@@ -280,25 +502,82 @@ const deleteExpense = (id) => {
 }
 
 const createPRApproval = () => {
-  helper.previewPo(
-    props.pr,
-    props.prItemList,
-    props.prExpenseList,
-    'Avatara Resort',
-    discount,
-    totalExpense,
-    subTotal.vat,
-    subTotal.sub,
-    (subTotal.vat + subTotal.sub + totalExpense - discount),
-    props.pr.requester
-  )
-  ft.updatePurchaseStatus({purchaseId: props.pr.id, status: 'await'}, res=> {
-    if(res.status){
-      getPrData(props.pr.id)
-    }else{
-      alert(res.msg)
+  let pr = props.pr
+  if(!pr.sellerId){
+    alert('กรุณาระบุผู้ขาย')
+    return
+  }
+  if(!pr.paymentType){
+    alert('กรุณาเลือกการชำระ')
+    return
+  }
+  if(!pr.property){
+    alert('เลือกผู้ลงนามสั่ง')
+    return
+  }
+
+  if(props.pr.status === 'await'){
+    helper.previewPo(
+      props.pr,
+      props.prItemList,
+      props.prExpenseList,
+      props.pr.property,
+      discount,
+      totalExpense,
+      subTotal.vat,
+      subTotal.sub,
+      (subTotal.vat + subTotal.sub + totalExpense - discount),
+      props.pr.issueDate,
+      props.pr.requester
+    )
+    return
+  }
+
+  Swal.fire({
+    title: 'ตรวจสอบข้อมูลให้ถูกต้อง หากยืนยันแล้วจะไม่สามารถแก้ไขได้?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'กลับ',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      helper.previewPo(
+        props.pr,
+        props.prItemList,
+        props.prExpenseList,
+        props.pr.property,
+        discount,
+        totalExpense,
+        subTotal.vat,
+        subTotal.sub,
+        (subTotal.vat + subTotal.sub + totalExpense - discount),
+        props.pr.issueDate,
+        props.pr.requester
+      )
+      ft.updatePurchaseStatus({purchaseId: props.pr.id, status: 'await'}, res=> {
+        if(res.status){
+          getPrData(props.pr.id)
+          getPrList()
+        }else{
+          alert(res.msg)
+        }
+      })
     }
-  })
+  });
+
+
+}
+
+
+let sellerListFormat = sellerList.map(x => ({label: x.name, value: x.id}))
+const paymentTypeList = ['เงินสด','ติดเครดิต','บัตรเครดิต','โอนเงิน']
+const propertyList = ['Avatara Resort', 'Samed pavilion Resort']
+
+const  formatDateForInput = (dateStr) => {
+  const [dd, mm, yyyy] = dateStr.split('/');
+  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
 }
 
   return (
@@ -324,17 +603,17 @@ const createPRApproval = () => {
               <div style={{flex: 2, fontSize: '26px'}}>
                 <b>ID: {props.pr.id}</b>
               </div>
-              <button className="btn btn-success btn-sm mx-3">จ่าย PO</button>
+              <button onClick={makePoOnClick} disabled={props.pr.status !== 'await'} className="btn btn-success btn-sm mx-3">จ่าย PO</button>
             <button onClick={createPRApproval} className="btn btn-warning btn-sm mx-3">ใบเสนอราคา</button>
               <button onClick={cancelPr} className="btn btn-danger btn-sm">ยกเลิก</button>
             </div>
             <div className="mt-2" style={{display:'flex'}}>
               <div style={{display:'flex', flexDirection: 'column', flexGrow: 1}}>
                 <span>{props.pr.requester?props.pr.requester : 'ไม่ระบุ'}</span>
-              <b>{props.pr.total ? props.pr.total.toFixed(2) : 0}.-</b>
+              <b>{props.pr.total ? numeral(props.pr.total).format('0,0.00') : 0}.-</b>
               </div>
               <div style={{display:'flex', flexDirection: 'column', flexGrow: 1}}>
-                <span>วันที่</span>
+                <span>สร้างเมื่อ</span>
               <b>{formatDate(props.pr.timestamp)}</b>
               </div>
               <div className='text-end' style={{display:'flex', flexDirection: 'column', flexGrow: 2 , justifyContent: 'flex-end'}}>
@@ -344,10 +623,99 @@ const createPRApproval = () => {
             </div>
             </div>
             <div className="mt-2 border rounded p-3" style={{display:'flex', flexDirection: 'column'}}>
-              <h6><u>ผู้ขาย & การชำระ</u></h6>
+              <div className="row">
+                <div className='col-1'>
+                  <h6><b><u>ผู้ขาย</u></b></h6>
+                </div>
+                {props.pr.status !== 'await' ?<div className="col-6">
+<button onClick={addNewSellerOnClick} className="btn btn-sm btn-info">+ เพิ่ม</button>
+                </div> : ''}
+
+
+              </div>
             <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80px', width: '100%'}}>
-              <button className="btn btn-link">+ เพิ่มผู้ขาย</button>
+              <div style={{width: '100%'}}>
+                {props.pr.status !== 'await' ? <Select value={seller} onChange={setSupplier} options={sellerListFormat} /> : <p>{seller.label}</p>}
+              </div>
             </div>
+            <hr />
+
+        <div className="row">
+          <div className='col-6'>
+            <h6><b><u>การชำระ</u></b></h6>
+          </div>
+          {
+            props.pr.paymentDetail ?
+            <div className='col-6'>
+              <span>{props.pr.paymentDetail}</span>
+          </div> : ''
+          }
+
+        </div>
+          <div style={{display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: '60px', width: '100%'}}>
+
+            {
+              paymentTypeList.map(opt => (
+                <div
+                  onClick={props.pr.status !== 'await' ? () => setPaymentType(opt) : () => {}}
+                  className={`rounded ${opt === payment ? 'bg-primary' : 'bg-secondary'}`}
+                  style={{
+                    color: 'white',
+                    cursor: props.pr.status !== 'await' ? 'pointer': '',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', width: '200px', height: '100%'}}>
+                  <h6>{opt}</h6>
+                </div>
+              ))
+            }
+            </div>
+            <hr />
+
+        <div className="row">
+          <div className='col-6'>
+            <h6><b><u>ข้อมูลการสั่งซื้อ</u></b></h6>
+          </div>
+
+        </div>
+        <div className="row">
+          <div className="col-2">
+            <label>สั่งซื้อในนาม: </label>
+          </div>
+          <div className="col-3">
+            <div style={{width: '100%'}}>
+              {props.pr.status !== 'await' ? <Select value={property} onChange={propertyOnChange} options={propertyList.map(opt => ({label: opt, value: opt}))} /> : property.label}
+            </div>
+          </div>
+          <div className="col-2">
+          </div>
+          <div className="col-2">
+            <label>วันที่รับบิล: </label>
+          </div>
+          <div className="col-3">
+            <div style={{width: '100%'}}>
+              <input value={issueDate} defaultValue={issueDate} type="date" onChange={setIssueDateClick} style={{width: '100%'}} />
+            </div>
+          </div>
+        </div>
+        <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+          <button
+            data-tooltip-id="my-tooltip-reference"
+            data-tooltip-content={props.pr.reference}
+            onClick={props.pr.status !== 'await' ? addReferenceOnClick : () => {}}
+            className={`mx-4 btn btn-sm ${(props.pr.reference !== null) ? 'btn-warning' : 'btn-link'}`}>+ Reference#</button>
+        {
+          console.log(props.pr.remark)
+        }
+        <button data-tooltip-id="my-tooltip-remark" data-tooltip-content={props.pr.remark}
+          onClick={props.pr.status !== 'await' ? addRemarkOnClick : () => {}}
+          className={`btn btn-sm ${(props.pr.remark !== null) ? 'btn-warning' : 'btn-link'}`}>+ หมายเหตุ</button>
+        </div>
+        {
+          props.pr.remark !== null  ? <Tooltip id="my-tooltip-remark" place="top" /> : ''
+        }
+        {
+          props.pr.reference !== null  ? <Tooltip id="my-tooltip-reference" place="top" /> : ''
+        }
+
             </div>
             <div className="mt-2" style={{display: 'flex', justifyContent: 'flex-end'}}>
               <div className="form-check">
@@ -356,7 +724,7 @@ const createPRApproval = () => {
                 type="checkbox"
                 id="flexCheckDefault"
                 checked={checked}
-                disabled={incVat}
+                disabled={incVat || props.pr.status === 'await' }
                 onChange={() => {
                   //Update Purchase Vat to : 1 or 2
                   ft.updatePurchaseIncludeVat({purchaseId: props.pr.id, includeVat: checked ? 2 : 1}, res => {})
@@ -368,7 +736,7 @@ const createPRApproval = () => {
                 ราคาสินค้ารวม Vat
               </label>
             </div>
-            <button onClick={props.editPrListItem} className="btn btn-info btn-sm mx-3">แก้ไขรายการ</button>
+            <button disabled={props.pr.status === 'await'} onClick={props.editPrListItem} className="btn btn-info btn-sm mx-3">แก้ไขรายการ</button>
             </div>
             <div style={{maxHeight: '60vh', overflowY: 'auto'}}>
               <table className="table table-striped">
@@ -389,6 +757,7 @@ const createPRApproval = () => {
         <th>ราคา/หน่วย</th>
       <th className="text-end"><button
   className={`btn btn-outline-secondary`}
+  disabled={props.pr.status === 'await' }
   onClick={handleAllVatToggle}
   >เปิด/ปิด Vat ทั้งหมด
   </button></th>
@@ -397,13 +766,13 @@ const createPRApproval = () => {
           </thead>
           <tbody>
             {props.prItemList.map((item, index) => (
-              <PrListItem index={index} item={item} handleItemToggle={(status) => handleItemToggle(index, status)} />
+              <PrListItem status={props.pr.status} index={index} item={item} handleItemToggle={(status) => handleItemToggle(index, status)} />
             ))}
           </tbody>
         </table>
             </div>
             <div>
-              <button onClick={addExpense} className="btn btn-success">+ เพิ่มค่าใช้จ่าย</button>
+              <button disabled={props.pr.status === 'await'} onClick={addExpense} className="btn btn-success">+ เพิ่มค่าใช้จ่าย</button>
             </div>
             {
               props.prExpenseList.length > 0 && (
@@ -429,9 +798,10 @@ const createPRApproval = () => {
                           <td>{index+1}</td>
                           <td>{exp.detail}</td>
                           <td>{exp.amount}</td>
-                          <td><button
+                        <td>{props.pr.status !== 'await' ? <button
+
                             onClick={() => deleteExpense(exp.id)}
-                             className="btn btn-outline-secondary"><i className="bi bi-trash"></i></button></td>
+                             className="btn btn-outline-secondary"><i className="bi bi-trash"></i></button>: ''}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -444,15 +814,15 @@ const createPRApproval = () => {
                 <table className='w-100 text-end' style={{ tableLayout: 'fixed' }}>
                   <tr>
                     <th>Subtotal</th>
-                    <td>฿{subTotal.sub.toFixed(2)}</td>
+                  <td>฿{numeral(subTotal.sub).format('0,0.00')}</td>
                   </tr>
                   <tr>
                     <th>Vat</th>
-                    <td>฿{subTotal.vat.toFixed(2)}</td>
+                  <td>฿{numeral(subTotal.vat).format('0,0.00')}</td>
                   </tr>
                   <tr>
                     <th>Other Expenses</th>
-                    <td>฿{totalExpense.toFixed(2)}</td>
+                  <td>฿{numeral(totalExpense).format('0,0.00')}</td>
                   </tr>
                   <tr>
                     <th>
@@ -461,11 +831,11 @@ const createPRApproval = () => {
                     }
                       Discount
                       </th>
-                    <td>฿{discount.toFixed(2)}</td>
+                    <td>฿{numeral(discount).format('0,0.00')}</td>
                   </tr>
                   <tr className="bg-dark" style={{color: 'white'}}>
                     <th>Total</th>
-                    <th>฿{(subTotal.vat + subTotal.sub + totalExpense - discount).toFixed(2)}</th>
+                    <th>฿{numeral(subTotal.vat + subTotal.sub + totalExpense - discount).format('0,0.00')}</th>
                   </tr>
                 </table>
                 </div>
@@ -498,7 +868,7 @@ const PrListBox = props => {
       </div>
       <div style={{display:'flex', justifyContent: 'space-between'}}>
         <span style={{color: lightTextColor}}>{pr.createBy}</span>
-      <span><b>{pr.total ? pr.total.toFixed(2) : 0}</b></span>
+      <span><b>{pr.total ? numeral(pr.total).format('0,0.00') : 0}.-</b></span>
       </div>
       <div style={{display:'flex', justifyContent: 'space-between', color: lightTextColor}}>
         <span>ID: {pr.id}</span>
@@ -509,7 +879,7 @@ const PrListBox = props => {
 }
 
 const PrListItem = props => {
-  const {item, handleItemToggle, index} = props
+  const {item, handleItemToggle, index, status} = props
 
    const handleToggle = () => {
      const status = item.vat === 'vat' || false
@@ -521,16 +891,17 @@ const PrListItem = props => {
       <td>{item.quantity}</td>
       <td>{item.name} [{item.unit}]</td>
 
-      <td>{item.current_price}</td>
+    <td>{numeral(item.current_price).format('0,0.00')}</td>
       <td className="text-end">
       <button
     className={`btn ${item.vat === 'vat' ? 'btn-primary' : 'btn-outline-secondary'}`}
     onClick={handleToggle}
+    disabled={status === 'await'}
     >
     {item.vat === 'vat' ? 'มี Vat' : 'ไม่มี Vat'}
     </button>
   </td>
-  <td className="text-end">{item.total}</td>
+  <td className="text-end">{numeral(item.total).format('0,0.00')}</td>
     </tr>
   )
 }
@@ -538,7 +909,7 @@ const PrListItem = props => {
 const formatDate = (inputDate) => {
   const date = moment(inputDate);
   return date.isSame(moment(), 'day')
-    ? date.format('HH:mm')
+    ? date.format('HH:mm A')
     : date.format('MMM D, YYYY');
 };
 export default MyComponent;

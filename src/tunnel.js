@@ -23,6 +23,15 @@ const cancelPr = (id, callback) => {
   makePostRequest('pr-delete', {id}, res => callback(res))
 }
 
+
+const makePoWithApproveFile = (data, callback) => {
+  const formData = new FormData();
+  formData.append('poId', data.purchaseId);
+  formData.append('vat', data.vat)
+  formData.append('file', data.file);
+  makePostRequest('makePoWithApproveFile', formData, res => callback(res))
+}
+
 const addExpenseToPurchase = (data, callback) => {
   makePostRequest('addExpenseToPurchase', data, res => callback(res))
 }
@@ -59,6 +68,40 @@ const updatePurchaseStatus = (data, callback) => {
   makePostRequest('pr/status/update', data, res => callback(res))
 }
 
+const updatePurchaseSellerId = (data, callback) => {
+  makePostRequest('pr/sellerId/update', data, res => callback(res))
+}
+
+
+const updatePurchasePaymentType = (data, callback) => {
+  makePostRequest('pr/paymentType/update', data, res => callback(res))
+}
+
+const updatePurchaseProperty = (data, callback) => {
+  makePostRequest('pr/property/update', data, res => callback(res))
+}
+
+
+const updatePurchaseIssueDate = (data, callback) => {
+  makePostRequest('pr/issueDate/update', data, res => callback(res))
+}
+
+const updatePurchaseRemark = (data, callback) => {
+  makePostRequest('pr/remark/update', data, res => callback(res))
+}
+
+const updatePurchaseReference = (data, callback) => {
+  makePostRequest('pr/reference/update', data, res => callback(res))
+}
+
+const submitNewSeller = (data, callback) => {
+  makePostRequest('submitNewSeller', data, res => callback(res))
+}
+
+const getSellers = (callback) => {
+  makeGetRequest('getSellers', res => callback(res))
+}
+
 function makePostRequest(route, data, callback){
   axios.post(`${ipAddress}/${route}`, data).then(res => {
      callback(res.data)
@@ -79,6 +122,15 @@ function makeGetRequest(route, callback){
 
 
 export default {
+  makePoWithApproveFile,
+  updatePurchaseRemark,
+  updatePurchaseReference,
+  updatePurchaseIssueDate,
+  updatePurchaseProperty,
+  submitNewSeller,
+  updatePurchasePaymentType,
+  updatePurchaseSellerId,
+  getSellers,
   updatePurchaseStatus,
   updatePurchaseIncludeVat,
   updateAllPurchaseItemVat,

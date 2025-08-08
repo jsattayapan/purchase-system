@@ -1,9 +1,9 @@
-import React from 'react';
+
 import moment from 'moment';
 import ReactDOMServer from 'react-dom/server'
 import numeral from 'numeral'
 
-  const previewPo = (pr, items, expenses, property, discount, expenseTotal, vat, stockValue, total,issueDate) => {
+  const previewPo = (pr, items, expenses, property, discount, expenseTotal, vat, stockValue, total,issueDate, requester) => {
     const myWindow = window.open("", pr.id, "width=595,height=842");
     const tableStyle = {borderCollapse: "collapse",border: "1px solid black", width: "100%"}
     const th = {border: "1px solid black"}
@@ -45,21 +45,24 @@ import numeral from 'numeral'
                 </div>
               </div>}
               <div style={{float: 'right'}}>
-                <h2>Purchase Order</h2>
+                <h2>Purchase Request</h2>
                 <div># {pr.id}</div>
-                <div>วันที่บันทึึก {moment().format('l')}</div>
+                <div>วันที่บันทึก {moment().format('l')}</div>
                 <div>วันที่รับบิล {moment(issueDate).format('l')}</div>
+                <div>
+                  ผู้สั่ง: {requester}
+                </div>
                 <div>
                   ผู้ขาย: {pr.supplier}
                 </div>
                 <div>
-                  ชำระเงินโดย: await
+                  ชำระเงินโดย: {pr.paymentType}
                 </div>
-                {/* {(pr.payment.type === 'โอนเงิน' || pr.payment.type === 'บัตรเครดิต') &&
+                {(pr.paymentType === 'โอนเงิน' || pr.paymentType === 'บัตรเครดิต') &&
                   <div>
-                  รายละเอียด: {pr.payment.detail}
+                  รายละเอียด: {pr.paymentDetail}
                 </div>
-                } */}
+                }
               </div>
             </div>
             <br />

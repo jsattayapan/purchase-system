@@ -1,7 +1,7 @@
 import React, { useState, useEffect,useRef } from 'react';
 import validator from 'validator';
 import Swal from 'sweetalert2';
-
+import numeral from "numeral";
 import ft from './../tunnel'
 
 const MyComponent = props => {
@@ -111,14 +111,17 @@ const handleBackButton = () => {
     }
   };
 
-  const submitPr = () => ft.submitPr({user: {username: 'olotem321'}, prList, requester}, res => {
-    if(res.status){
-        alert('บันทึกสำเร็จ')
-        backToPo()
-      }else{
-        alert(res.msg)
-      }
-  })
+  const submitPr = () => {
+    ft.submitPr({user: {username: 'olotem321'}, prList, requester}, res => {
+
+      if(res.status){
+          alert('บันทึกสำเร็จ')
+          backToPo()
+        }else{
+          alert(res.msg)
+        }
+    })
+  }
 
 
   const editPrItemList = () => ft.editPrItemList({user: {username: 'olotem321'}, prList, requester, purchaseId: props.pr.id}, res => {
@@ -152,7 +155,7 @@ const handleBackButton = () => {
   const updateTotal = (e, index) => {
     const newPrice = e.target.value;
     const updatedList = [...prList];
-    updatedList[index].total = 1 * newPrice;
+    updatedList[index].total = newPrice;
     updatedList[index].quantity = (newPrice / updatedList[index].current_price).toFixed(3);
     setPrList(updatedList);
   };
@@ -166,7 +169,10 @@ const handleBackButton = () => {
 
   };
 
-  const subTotal = prList.reduce((total, item) => total += item.total,0)
+  const subTotal = prList.reduce((total, item) => {
+    total += parseFloat(item.total)
+    return total
+  },0)
 
 
   return (
@@ -238,7 +244,7 @@ const handleBackButton = () => {
             </div>
             <div className="col-6 bg-light text-end p-2">
             <br />
-          <h4>รวม: {new Intl.NumberFormat('en-US').format(subTotal)} บาท</h4>
+          <h4>รวม: {numeral(subTotal).format('0,0.00')} บาท</h4>
           <div className="col-12 text-end">
               <button onClick={props.pr ? editPrItemList : submitPr} className="btn btn-success"
                 disabled={!(prList.length !== 0 && !prList.some(item => item.isEdit) && requester.trim() !== '')}>
