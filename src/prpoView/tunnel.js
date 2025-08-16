@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {ipAddress, tunitServer} from './constants';
+import {ipAddress, tunitServer} from './../constants';
 
 const getItems = (callback) => {
   makeGetRequest('items', res => callback(res))
@@ -28,6 +28,7 @@ const makePoWithApproveFile = (data, callback) => {
   const formData = new FormData();
   formData.append('poId', data.purchaseId);
   formData.append('vat', data.vat)
+  formData.append('total', data.total)
   formData.append('file', data.file);
   makePostRequest('makePoWithApproveFile', formData, res => callback(res))
 }

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import ft from './../tunnel'
+import ft from './tunnel'
 import helper from './helper'
 import numeral from "numeral";
 import moment from 'moment'
 import Swal from 'sweetalert2';
 import Select from 'react-select'
-import { Tooltip } from 'react-tooltip';
-import 'react-tooltip/dist/react-tooltip.css';
+import ReactTooltip from 'react-tooltip';
 
 const MyComponent = (props) => {
  const [checked, setChecked] = useState(false);
@@ -16,7 +15,6 @@ const MyComponent = (props) => {
  const [payment, setPayment] = useState(null)
  const [property, setProperty] = useState(null)
  const [issueDate, setIssueDate] = useState("")
- const username = 'olotem321'
 
  useEffect(() => {
    getPrList()
@@ -381,7 +379,7 @@ const makePoOnClick = async () => {
     if (file) {
       // Example: Read file as Data URL
       console.log(file);
-      ft.makePoWithApproveFile({purchaseId: props.pr.id, file, vat: subTotal.vat }, res => {
+      ft.makePoWithApproveFile({purchaseId: props.pr.id, file, vat: subTotal.vat, total: subTotal.vat + subTotal.sub + totalExpense - discount }, res => {
         if(res.status){
           alert('ข้อมูลถูกบันทึก')
           props.setPr(null)
@@ -467,7 +465,7 @@ const submitExpense = (expenseDetail, expenseAmount) => {
         purchaseId: props.pr.id,
         amount: expenseAmount,
         detail: expenseDetail,
-        createBy: 'olotem321'
+        createBy: props.user.username
     }, res => {
         if(res.status){
           getPrData(props.pr.id)
@@ -590,7 +588,7 @@ const  formatDateForInput = (dateStr) => {
            <div className="border-end"
              style={{maxHeight: '100vh', overflowY: 'auto'}}>
              {
-               prList.filter(pr => (username === 'olotem321' || pr.createBy === username))
+               prList.filter(pr => (props.user.username === 'olotem321' || pr.createBy === props.user.username))
                .map(pr => <PrListBox selectedId={props.pr? props.pr.id : '0'} pr={pr} getPrById={getPrData} />)
              }
            </div>
@@ -698,22 +696,21 @@ const  formatDateForInput = (dateStr) => {
         </div>
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           <button
-            data-tooltip-id="my-tooltip-reference"
-            data-tooltip-content={props.pr.reference}
+            data-tip={props.pr.reference}
             onClick={props.pr.status !== 'await' ? addReferenceOnClick : () => {}}
             className={`mx-4 btn btn-sm ${(props.pr.reference !== null) ? 'btn-warning' : 'btn-link'}`}>+ Reference#</button>
         {
           console.log(props.pr.remark)
         }
-        <button data-tooltip-id="my-tooltip-remark" data-tooltip-content={props.pr.remark}
+        <button data-tip={props.pr.remark}
           onClick={props.pr.status !== 'await' ? addRemarkOnClick : () => {}}
           className={`btn btn-sm ${(props.pr.remark !== null) ? 'btn-warning' : 'btn-link'}`}>+ หมายเหตุ</button>
         </div>
         {
-          props.pr.remark !== null  ? <Tooltip id="my-tooltip-remark" place="top" /> : ''
+          props.pr.remark !== null  ? <ReactTooltip place="top" type="dark" effect="solid" /> : ''
         }
         {
-          props.pr.reference !== null  ? <Tooltip id="my-tooltip-reference" place="top" /> : ''
+          props.pr.reference !== null  ? <ReactTooltip place="top" type="dark" effect="solid" /> : ''
         }
 
             </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect,useRef } from 'react';
 import validator from 'validator';
 import Swal from 'sweetalert2';
 import numeral from "numeral";
-import ft from './../tunnel'
+import ft from './tunnel'
 
 const MyComponent = props => {
   const [prList, setPrList] = useState(props.prItemList);
@@ -112,7 +112,7 @@ const handleBackButton = () => {
   };
 
   const submitPr = () => {
-    ft.submitPr({user: {username: 'olotem321'}, prList, requester}, res => {
+    ft.submitPr({user: {username: props.user.username}, prList, requester}, res => {
 
       if(res.status){
           alert('บันทึกสำเร็จ')
@@ -124,7 +124,7 @@ const handleBackButton = () => {
   }
 
 
-  const editPrItemList = () => ft.editPrItemList({user: {username: 'olotem321'}, prList, requester, purchaseId: props.pr.id}, res => {
+  const editPrItemList = () => ft.editPrItemList({user: {username: props.user.username}, prList, requester, purchaseId: props.pr.id}, res => {
     if(res.status){
       props.setPrItemList(prList)
       let newPr = props.pr
@@ -259,7 +259,6 @@ const handleBackButton = () => {
         <div className="col-4 background-1">
           <h4>รายการ</h4>
           <div className="row">
-            <div className="p-2">
             <div className="pr-search-list ">
               {itemsList
                 .filter((x) => x.name.includes(prFilter))
@@ -274,7 +273,6 @@ const handleBackButton = () => {
                   </div>
                 ))}
             </div>
-          </div>
           </div>
           <div className="row">
             <div className="mb-3">

@@ -1,6 +1,7 @@
 import React, {useState} from 'react'
 import PrView from './pr-view';
 import PoView from './po-view';
+import './App.css'
 
 const Container = props => {
   const [page, setPage] = useState('po')
@@ -31,6 +32,7 @@ const Container = props => {
         editPrListItem={editPrListItem}
         prExpenseList={prExpenseList}
         setPrExpenseList={setPrExpenseList}
+        user={props.user}
          /> :
         <PrView
           setPage={setPage}
@@ -38,6 +40,7 @@ const Container = props => {
           pr={pr}
           setPrItemList={setPrItemList}
           setPr={setPr}
+          user={props.user}
           />
       }
     </div>
